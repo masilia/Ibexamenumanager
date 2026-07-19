@@ -8,8 +8,9 @@
  * @license   https://github.com/Novactive/NovaeZMenuManagerBundle/blob/master/LICENSE
  *
  */
+import $ from 'jquery';
 
-(function (global, $) {
+(function (global) {
   const SELECTOR_FIELD = '.ibexa-field-edit--menuitem'
   const SELECT_MENU_WRAPPER = '.menu__wrapper'
   const SELECT_MENU_TREE_WRAPPER = '.menu-tree__wrapper'
@@ -256,7 +257,11 @@
             $('[data-target="#' + $(this).attr('id') + '"]').prop('checked', false)
             menu.updateInputCallback()
           })
-          .collapse(this.hasItems() ? 'show' : 'hide')
+      if (this.hasItems()) {
+        $(SELECTOR_COLLAPSE, this.element).addClass('show').trigger('show.bs.collapse')
+      } else {
+        $(SELECTOR_COLLAPSE, this.element).removeClass('show').trigger('hide.bs.collapse')
+      }
 
       if (!this.hasItems()) {
         menu.disable()
@@ -440,4 +445,4 @@
       window.ibexa.fieldTypeValidators = window.ibexa.fieldTypeValidators ? [...window.ibexa.fieldTypeValidators, validator] : [validator]
     }
   })
-})(window, window.jQuery)
+})(window)

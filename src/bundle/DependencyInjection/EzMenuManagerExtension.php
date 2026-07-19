@@ -49,7 +49,7 @@ class EzMenuManagerExtension extends Extension implements PrependExtensionInterf
                     'EzMenuManagerBundle' => [
                         'type' => 'attribute',
                         'dir' => __DIR__.'/../Entity',
-                        'prefix' => 'Novactive\EzMenuManagerBundle',
+                        'prefix' => 'Novactive\EzMenuManagerBundle\Entity',
                         'is_bundle' => false,
                     ],
                 ],
