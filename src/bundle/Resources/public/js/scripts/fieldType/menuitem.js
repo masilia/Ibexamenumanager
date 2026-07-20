@@ -10,7 +10,7 @@
  */
 import $ from 'jquery';
 
-(function (global) {
+(function (global, doc, ibexa) {
   const SELECTOR_FIELD = '.ibexa-field-edit--menuitem'
   const SELECT_MENU_WRAPPER = '.menu__wrapper'
   const SELECT_MENU_TREE_WRAPPER = '.menu-tree__wrapper'
@@ -18,63 +18,7 @@ import $ from 'jquery';
   const SELECTOR_LABEL_WRAPPER = '.ibexa-field-edit__label-wrapper'
   const SELECTOR_COLLAPSE = '.collapse'
 
-  class MenuItemValidator {
-    constructor(config) {
-      this.classInvalid = config.classInvalid || 'is-invalid';
-      this.fieldContainer = config.fieldContainer;
-      this.eventsMap = config.eventsMap || [];
-    }
-
-    init() {
-      this.eventsMap.forEach((eventConfig) => {
-        const elements = this.fieldContainer.querySelectorAll(eventConfig.selector);
-        elements.forEach((element) => {
-          element.addEventListener(eventConfig.eventName, (event) => {
-            const result = this[eventConfig.callback](event);
-            this.toggleInvalidState(event.target, result.isError, result.errorMessage, eventConfig.errorNodeSelectors);
-          });
-        });
-      });
-    }
-
-    toggleInvalidState(input, isError, errorMessage, errorNodeSelectors) {
-      const method = isError ? 'add' : 'remove';
-
-      input.classList[method](this.classInvalid);
-
-      if (errorNodeSelectors) {
-        errorNodeSelectors.forEach((selector) => {
-          const errorNode = input.closest(SELECTOR_FIELD).querySelector(selector);
-          if (errorNode) {
-            errorNode.classList[method](this.classInvalid);
-          }
-        });
-      }
-
-      if (isError) {
-        this.showError(input, errorMessage);
-      } else {
-        this.hideError(input);
-      }
-    }
-
-    showError(input, message) {
-      let errorElement = input.parentElement.querySelector('.ibexa-form-error');
-      if (!errorElement) {
-        errorElement = document.createElement('div');
-        errorElement.className = 'ibexa-form-error';
-        input.parentElement.appendChild(errorElement);
-      }
-      errorElement.textContent = message;
-    }
-
-    hideError(input) {
-      const errorElement = input.parentElement.querySelector('.ibexa-form-error');
-      if (errorElement) {
-        errorElement.remove();
-      }
-    }
-
+  class MenuItemValidator extends ibexa.BaseFieldValidator {
     /**
      * Validates the input
      *
@@ -91,21 +35,16 @@ import $ from 'jquery';
       try {
         JSON.parse(event.target.value)
       } catch (e) {
-        console.log('Parsing error:', e)
         hasCorrectValues = false
       }
       const result = { isError: false }
 
       if (isRequired && isEmpty) {
         result.isError = true
-        result.errorMessage = (window.ibexa && window.ibexa.errors && window.ibexa.errors.emptyField)
-            ? window.ibexa.errors.emptyField.replace('{fieldName}', label)
-            : `${label} cannot be empty`;
+        result.errorMessage = ibexa.errors.emptyField.replace('{fieldName}', label)
       } else if (!isEmpty && !hasCorrectValues) {
         result.isError = true
-        result.errorMessage = (window.ibexa && window.ibexa.errors && window.ibexa.errors.invalidValue)
-            ? window.ibexa.errors.invalidValue.replace('{fieldName}', label)
-            : `${label} has an invalid value`;
+        result.errorMessage = ibexa.errors.invalidValue.replace('{fieldName}', label)
       }
 
       return result
@@ -392,20 +331,22 @@ import $ from 'jquery';
     }
   }
 
-  document.querySelectorAll(SELECTOR_FIELD).forEach((fieldContainer) => {
+  doc.querySelectorAll(SELECTOR_FIELD).forEach((fieldContainer) => {
     const menuList = new Map()
     const rawMenuItems = JSON.parse(fieldContainer.querySelector(SELECTOR_INPUT).value)
     const validator = new MenuItemValidator({
       classInvalid: 'is-invalid',
+      fieldSelector: SELECTOR_FIELD,
       fieldContainer,
       eventsMap: [
         {
           selector: SELECTOR_INPUT,
           eventName: 'blur',
           callback: 'validateInput',
-          errorNodeSelectors: [SELECTOR_LABEL_WRAPPER]
-        }
-      ]
+          errorNodeSelectors: ['.ibexa-field-edit__data'],
+          invalidStateSelectors: [SELECTOR_LABEL_WRAPPER],
+        },
+      ],
     })
 
     const updateInput = () => {
@@ -440,9 +381,6 @@ import $ from 'jquery';
     })
     validator.init()
 
-    // Register validator with ibexa if available
-    if (window.ibexa) {
-      window.ibexa.fieldTypeValidators = window.ibexa.fieldTypeValidators ? [...window.ibexa.fieldTypeValidators, validator] : [validator]
-    }
+    ibexa.addConfig('fieldTypeValidators', [validator], true)
   })
-})(window)
+})(window, window.document, window.ibexa)
